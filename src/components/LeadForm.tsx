@@ -7,7 +7,6 @@ import {
   AlertCircle,
   ArrowRight,
   Building2,
-  CheckCircle2,
   Loader2,
   LockKeyhole,
   Mail,
@@ -35,18 +34,25 @@ const INITIAL_VALUES: LeadFormValues = {
   message: "",
 };
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const DOMAIN_PATTERN =
   /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i;
 
-const PHONE_PATTERN = /^[+]?[\d\s().-]{7,20}$/;
+const PHONE_PATTERN =
+  /^[+]?[\d\s().-]{7,20}$/;
+
+/* ===============================================================
+   VALIDATION
+================================================================ */
 
 function validateField(
   name: keyof LeadFormValues,
   values: LeadFormValues
 ): string | undefined {
-  const value = values[name].trim();
+  const value =
+    values[name].trim();
 
   switch (name) {
     case "firstName":
@@ -64,7 +70,9 @@ function validateField(
         return "Work email is required.";
       }
 
-      if (!EMAIL_PATTERN.test(value)) {
+      if (
+        !EMAIL_PATTERN.test(value)
+      ) {
         return "Enter a valid work email address.";
       }
 
@@ -80,7 +88,9 @@ function validateField(
         return "Company domain is required.";
       }
 
-      if (!DOMAIN_PATTERN.test(value)) {
+      if (
+        !DOMAIN_PATTERN.test(value)
+      ) {
         return "Enter a valid domain, e.g. company.com.";
       }
 
@@ -91,7 +101,9 @@ function validateField(
         return undefined;
       }
 
-      return PHONE_PATTERN.test(value)
+      return PHONE_PATTERN.test(
+        value
+      )
         ? undefined
         : "Enter a valid phone number.";
 
@@ -106,12 +118,19 @@ function validateField(
 function validateAll(
   values: LeadFormValues
 ): LeadFormErrors {
-  const errors: LeadFormErrors = {};
+  const errors: LeadFormErrors =
+    {};
 
   (
-    Object.keys(values) as (keyof LeadFormValues)[]
+    Object.keys(
+      values
+    ) as (keyof LeadFormValues)[]
   ).forEach((key) => {
-    const error = validateField(key, values);
+    const error =
+      validateField(
+        key,
+        values
+      );
 
     if (error) {
       errors[key] = error;
@@ -121,9 +140,48 @@ function validateAll(
   return errors;
 }
 
+/* ===============================================================
+   DUPLICATE DETECTION
+================================================================ */
+
+function isDuplicateEmailError(
+  message?: string
+) {
+  if (!message) {
+    return false;
+  }
+
+  const normalized =
+    message.toLowerCase();
+
+  return (
+    normalized.includes(
+      "duplicate"
+    ) ||
+    normalized.includes(
+      "already registered"
+    ) ||
+    normalized.includes(
+      "already exists"
+    ) ||
+    normalized.includes(
+      "email exists"
+    ) ||
+    normalized.includes(
+      "email already"
+    )
+  );
+}
+
+/* ===============================================================
+   MAIN COMPONENT
+================================================================ */
+
 export default function LeadForm() {
   const [values, setValues] =
-    useState<LeadFormValues>(INITIAL_VALUES);
+    useState<LeadFormValues>(
+      INITIAL_VALUES
+    );
 
   const [errors, setErrors] =
     useState<LeadFormErrors>({});
@@ -132,12 +190,24 @@ export default function LeadForm() {
     useState<LeadFormTouched>({});
 
   const [status, setStatus] =
-    useState<LeadSubmissionStatus>("idle");
+    useState<LeadSubmissionStatus>(
+      "idle"
+    );
 
-  const [submitError, setSubmitError] =
-    useState<string | null>(null);
+  const [
+    submitError,
+    setSubmitError,
+  ] =
+    useState<string | null>(
+      null
+    );
 
-  const isSubmitting = status === "submitting";
+  const isSubmitting =
+    status === "submitting";
+
+  /* =============================================================
+     CHANGE
+  ============================================================= */
 
   function handleChange(
     name: keyof LeadFormValues,
@@ -151,42 +221,93 @@ export default function LeadForm() {
     setValues(nextValues);
 
     /*
-     * Hilangkan global error saat user mulai mengubah data.
+     * Saat user mengganti email setelah error duplicate,
+     * hapus peringatan duplicate lama.
      */
-    if (status === "error") {
+    if (
+      name === "email" &&
+      errors.email
+    ) {
+      setErrors(
+        (prev) => ({
+          ...prev,
+          email:
+            validateField(
+              "email",
+              nextValues
+            ),
+        })
+      );
+    }
+
+    if (
+      status === "error"
+    ) {
       setStatus("idle");
       setSubmitError(null);
     }
 
     if (touched[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: validateField(name, nextValues),
-      }));
+      setErrors(
+        (prev) => ({
+          ...prev,
+
+          [name]:
+            validateField(
+              name,
+              nextValues
+            ),
+        })
+      );
     }
   }
+
+  /* =============================================================
+     BLUR
+  ============================================================= */
 
   function handleBlur(
     name: keyof LeadFormValues
   ) {
-    setTouched((prev) => ({
-      ...prev,
-      [name]: true,
-    }));
+    setTouched(
+      (prev) => ({
+        ...prev,
+        [name]: true,
+      })
+    );
 
-    setErrors((prev) => ({
-      ...prev,
-      [name]: validateField(name, values),
-    }));
+    setErrors(
+      (prev) => ({
+        ...prev,
+
+        [name]:
+          validateField(
+            name,
+            values
+          ),
+      })
+    );
   }
+
+  /* =============================================================
+     RESET
+  ============================================================= */
 
   function resetForm() {
     setValues(INITIAL_VALUES);
+
     setErrors({});
+
     setTouched({});
+
     setStatus("idle");
+
     setSubmitError(null);
   }
+
+  /* =============================================================
+     SUBMIT
+  ============================================================= */
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
@@ -197,7 +318,8 @@ export default function LeadForm() {
       return;
     }
 
-    const allErrors = validateAll(values);
+    const allErrors =
+      validateAll(values);
 
     setErrors(allErrors);
 
@@ -211,79 +333,155 @@ export default function LeadForm() {
       message: true,
     });
 
-    if (Object.keys(allErrors).length > 0) {
+    if (
+      Object.keys(allErrors)
+        .length > 0
+    ) {
       return;
     }
 
     setStatus("submitting");
+
     setSubmitError(null);
 
     try {
-      const result = await submitLead(values);
+      const result =
+        await submitLead(
+          values
+        );
+
+      /* ===========================================================
+         DUPLICATE EMAIL
+      =========================================================== */
+
+      if (
+        !result.success &&
+        isDuplicateEmailError(
+          result.errorMessage
+        )
+      ) {
+        setStatus("error");
+
+        setTouched(
+          (prev) => ({
+            ...prev,
+            email: true,
+          })
+        );
+
+        setErrors(
+          (prev) => ({
+            ...prev,
+
+            email:
+              "This email is already registered. Please use a different email address.",
+          })
+        );
+
+        setSubmitError(
+          "A lead with this email address already exists."
+        );
+
+        return;
+      }
+
+      /* ===========================================================
+         SUCCESS
+      =========================================================== */
 
       if (result.success) {
         setStatus("success");
         return;
       }
 
-      // Menangani error balasan dari backend/n8n (termasuk email duplikat)
-      setStatus("error");
-      
-      const errorMessage = result.errorMessage || "";
-      
-      // Deteksi jika pesan mengandung kata 'duplicate' atau 'already exists'
-      if (
-        errorMessage.toLowerCase().includes("duplicate") ||
-        errorMessage.toLowerCase().includes("already registered") ||
-        errorMessage.toLowerCase().includes("already exists")
-      ) {
-        setErrors((prev) => ({
-          ...prev,
-          email: "This email is already registered in our system.",
-        }));
-        setSubmitError("This email has already been submitted. Please use a different work email.");
-      } else {
-        setSubmitError(
-          errorMessage || "We couldn't process your request. Please try again."
-        );
-      }
-    } catch (err: unknown) {
+      /* ===========================================================
+         NORMAL BACKEND ERROR
+      =========================================================== */
+
       setStatus("error");
 
-      const errMessage = err instanceof Error ? err.message : "";
+      setSubmitError(
+        result.errorMessage ??
+          "We couldn't process your request. Please try again."
+      );
+    } catch (
+      error
+    ) {
+      setStatus("error");
 
+      const message =
+        error instanceof Error
+          ? error.message
+          : "";
+
+      /*
+       * Tetap deteksi duplicate
+       * jika leadService melempar Error.
+       */
       if (
-        errMessage.toLowerCase().includes("duplicate") ||
-        errMessage.toLowerCase().includes("already registered")
+        isDuplicateEmailError(
+          message
+        )
       ) {
-        setErrors((prev) => ({
-          ...prev,
-          email: "This email is already registered in our system.",
-        }));
-        setSubmitError("This email has already been submitted. Please use a different work email.");
-      } else {
-        setSubmitError(
-          "We couldn't connect to the service. Please check your connection and try again."
+        setTouched(
+          (prev) => ({
+            ...prev,
+            email: true,
+          })
         );
+
+        setErrors(
+          (prev) => ({
+            ...prev,
+
+            email:
+              "This email is already registered. Please use a different email address.",
+          })
+        );
+
+        setSubmitError(
+          "A lead with this email address already exists."
+        );
+
+        return;
       }
+
+      setSubmitError(
+        "We couldn't connect to the service. Please try again in a moment."
+      );
     }
   }
 
-  if (status === "success") {
+  /* =============================================================
+     SUCCESS
+  ============================================================= */
+
+  if (
+    status === "success"
+  ) {
     return (
       <div className="mx-auto max-w-2xl">
         <SuccessState
-          firstName={values.firstName || "there"}
-          onReset={resetForm}
+          firstName={
+            values.firstName ||
+            "there"
+          }
+          onReset={
+            resetForm
+          }
         />
       </div>
     );
   }
 
+  /* =============================================================
+     UI
+  ============================================================= */
+
   return (
     <div className="mx-auto max-w-3xl">
       {/* =========================================================
-          FORM INTRODUCTION
+          INTRO
       ========================================================= */}
 
       <div className="mb-8 flex flex-col gap-5 border-b border-white/[0.07] pb-8 sm:flex-row sm:items-start sm:justify-between">
@@ -298,7 +496,8 @@ export default function LeadForm() {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-semibold tracking-tight text-white">
-                Tell us about your team
+                Tell us about your
+                team
               </h3>
 
               <span className="hidden rounded-full border border-indigo-400/15 bg-indigo-500/[0.08] px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-indigo-300 sm:inline-flex">
@@ -306,14 +505,18 @@ export default function LeadForm() {
               </span>
             </div>
 
-            <p className="mt-1.5 max-w-lg text-sm leading-6 text-slate-500">
-              Submit your information and see how the
-              automated lead workflow processes your request.
+            <p className="mt-1.5 max-w-lg text-sm leading-6 text-white/60">
+              Submit your
+              information and see
+              how the automated
+              lead workflow
+              processes your
+              request.
             </p>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 text-xs text-slate-500">
+        <div className="flex shrink-0 items-center gap-2 text-xs text-white/60">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
 
@@ -330,10 +533,12 @@ export default function LeadForm() {
 
       <form
         noValidate
-        onSubmit={handleSubmit}
+        onSubmit={
+          handleSubmit
+        }
         className="space-y-6"
       >
-        {/* Personal information */}
+        {/* CONTACT */}
 
         <FormGroup
           eyebrow="01"
@@ -343,14 +548,20 @@ export default function LeadForm() {
             <Field
               label="First name"
               name="firstName"
-              value={values.firstName}
+              value={
+                values.firstName
+              }
               error={
                 touched.firstName
                   ? errors.firstName
                   : undefined
               }
-              onChange={handleChange}
-              onBlur={handleBlur}
+              onChange={
+                handleChange
+              }
+              onBlur={
+                handleBlur
+              }
               autoComplete="given-name"
               placeholder="Alexander"
               required
@@ -359,14 +570,20 @@ export default function LeadForm() {
             <Field
               label="Last name"
               name="lastName"
-              value={values.lastName}
+              value={
+                values.lastName
+              }
               error={
                 touched.lastName
                   ? errors.lastName
                   : undefined
               }
-              onChange={handleChange}
-              onBlur={handleBlur}
+              onChange={
+                handleChange
+              }
+              onBlur={
+                handleBlur
+              }
               autoComplete="family-name"
               placeholder="Wright"
               required
@@ -377,21 +594,27 @@ export default function LeadForm() {
             label="Work email"
             name="email"
             type="email"
-            value={values.email}
+            value={
+              values.email
+            }
             error={
               touched.email
                 ? errors.email
                 : undefined
             }
-            onChange={handleChange}
-            onBlur={handleBlur}
+            onChange={
+              handleChange
+            }
+            onBlur={
+              handleBlur
+            }
             autoComplete="email"
             placeholder="alex.wright@nexuslabs.io"
             required
           />
         </FormGroup>
 
-        {/* Company */}
+        {/* COMPANY */}
 
         <FormGroup
           eyebrow="02"
@@ -401,14 +624,20 @@ export default function LeadForm() {
             <Field
               label="Company name"
               name="companyName"
-              value={values.companyName}
+              value={
+                values.companyName
+              }
               error={
                 touched.companyName
                   ? errors.companyName
                   : undefined
               }
-              onChange={handleChange}
-              onBlur={handleBlur}
+              onChange={
+                handleChange
+              }
+              onBlur={
+                handleBlur
+              }
               autoComplete="organization"
               placeholder="Nexus Labs"
               required
@@ -417,14 +646,20 @@ export default function LeadForm() {
             <Field
               label="Company domain"
               name="companyDomain"
-              value={values.companyDomain}
+              value={
+                values.companyDomain
+              }
               error={
                 touched.companyDomain
                   ? errors.companyDomain
                   : undefined
               }
-              onChange={handleChange}
-              onBlur={handleBlur}
+              onChange={
+                handleChange
+              }
+              onBlur={
+                handleBlur
+              }
               placeholder="nexuslabs.io"
               required
             />
@@ -434,21 +669,27 @@ export default function LeadForm() {
             label="Phone number"
             name="phone"
             type="tel"
-            value={values.phone}
+            value={
+              values.phone
+            }
             error={
               touched.phone
                 ? errors.phone
                 : undefined
             }
-            onChange={handleChange}
-            onBlur={handleBlur}
+            onChange={
+              handleChange
+            }
+            onBlur={
+              handleBlur
+            }
             autoComplete="tel"
             placeholder="+1 234 567 890"
             optional
           />
         </FormGroup>
 
-        {/* Requirements */}
+        {/* MESSAGE */}
 
         <FormGroup
           eyebrow="03"
@@ -457,21 +698,27 @@ export default function LeadForm() {
           <TextAreaField
             label="Requirements"
             name="message"
-            value={values.message}
+            value={
+              values.message
+            }
             error={
               touched.message
                 ? errors.message
                 : undefined
             }
-            onChange={handleChange}
-            onBlur={handleBlur}
+            onChange={
+              handleChange
+            }
+            onBlur={
+              handleBlur
+            }
             placeholder="Tell us about your current lead process, sales workflow, or what you'd like to automate..."
             optional
           />
         </FormGroup>
 
         {/* =========================================================
-            ERROR
+            GLOBAL ERROR
         ========================================================= */}
 
         {status === "error" &&
@@ -479,16 +726,17 @@ export default function LeadForm() {
             <div
               role="alert"
               aria-live="polite"
-              className="flex items-start gap-3 rounded-xl border border-red-400/20 bg-red-500/[0.08] px-4 py-3.5 text-sm text-red-200"
+              className="flex items-start gap-3 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-4 text-sm text-white"
             >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
 
               <div>
-                <p className="font-medium">
-                  We couldn't submit your request.
+                <p className="font-semibold text-white">
+                  Unable to submit
+                  this lead
                 </p>
 
-                <p className="mt-1 text-xs leading-5 text-red-300/70">
+                <p className="mt-1 text-xs leading-5 text-red-200/80">
                   {submitError}
                 </p>
               </div>
@@ -496,21 +744,26 @@ export default function LeadForm() {
           )}
 
         {/* =========================================================
-            SUBMIT
+            BUTTON
         ========================================================= */}
 
         <div className="border-t border-white/[0.07] pt-6">
           <button
             type="submit"
-            disabled={isSubmitting}
-            aria-busy={isSubmitting}
+            disabled={
+              isSubmitting
+            }
+            aria-busy={
+              isSubmitting
+            }
             className="group flex w-full items-center justify-center gap-2.5 rounded-xl bg-white px-6 py-3.5 text-sm font-semibold text-slate-950 shadow-xl shadow-black/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-100 hover:shadow-2xl focus:outline-none focus-visible:ring-4 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 sm:text-[15px]"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
 
-                Processing your request...
+                Checking and
+                processing...
               </>
             ) : (
               <>
@@ -521,39 +774,36 @@ export default function LeadForm() {
             )}
           </button>
 
-          {/* Trust footer */}
-
-          <div className="mt-5 flex flex-col items-center justify-center gap-3 text-center text-xs text-slate-600 sm:flex-row">
+          <div className="mt-5 flex flex-col items-center justify-center gap-3 text-center text-xs text-white/50 sm:flex-row">
             <span className="inline-flex items-center gap-1.5">
               <LockKeyhole className="h-3.5 w-3.5 text-emerald-400" />
-
               Secure submission
             </span>
 
-            <span className="hidden text-slate-800 sm:inline">
+            <span className="hidden text-white/20 sm:inline">
               •
             </span>
 
             <span className="inline-flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-
               AI-assisted qualification
             </span>
 
-            <span className="hidden text-slate-800 sm:inline">
+            <span className="hidden text-white/20 sm:inline">
               •
             </span>
 
             <span className="inline-flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5 text-slate-500" />
-
+              <Mail className="h-3.5 w-3.5 text-white/50" />
               Human-reviewed outreach
             </span>
           </div>
 
-          <p className="mx-auto mt-4 max-w-xl text-center text-[11px] leading-5 text-slate-600">
-            By submitting this form, you agree to be
-            contacted regarding your request.
+          <p className="mx-auto mt-4 max-w-xl text-center text-[11px] leading-5 text-white/40">
+            By submitting this
+            form, you agree to be
+            contacted regarding
+            your request.
           </p>
         </div>
       </form>
@@ -583,7 +833,7 @@ function FormGroup({
           {eyebrow}
         </span>
 
-        <h4 className="text-sm font-semibold text-slate-200">
+        <h4 className="text-sm font-semibold text-white">
           {title}
         </h4>
       </div>
@@ -596,7 +846,7 @@ function FormGroup({
 }
 
 /* ===============================================================
-   INPUT
+   INPUT FIELD
 ================================================================ */
 
 interface FieldProps {
@@ -604,13 +854,16 @@ interface FieldProps {
   name: keyof LeadFormValues;
   value: string;
   error?: string;
+
   onChange: (
     name: keyof LeadFormValues,
     value: string
   ) => void;
+
   onBlur: (
     name: keyof LeadFormValues
   ) => void;
+
   type?: string;
   autoComplete?: string;
   placeholder?: string;
@@ -631,18 +884,19 @@ function Field({
   required,
   optional,
 }: FieldProps) {
-  const errorId = `${name}-error`;
+  const errorId =
+    `${name}-error`;
 
   return (
     <div>
       <label
         htmlFor={name}
-        className="mb-2 flex items-center gap-1 text-xs font-medium text-slate-300"
+        className="mb-2 flex items-center gap-1 text-xs font-medium text-white/80"
       >
         {label}
 
         {optional && (
-          <span className="font-normal text-slate-600">
+          <span className="font-normal text-white/40">
             (optional)
           </span>
         )}
@@ -662,20 +916,37 @@ function Field({
         name={name}
         type={type}
         value={value}
-        onChange={(event) =>
-          onChange(name, event.target.value)
+        onChange={(
+          event
+        ) =>
+          onChange(
+            name,
+            event.target.value
+          )
         }
-        onBlur={() => onBlur(name)}
-        autoComplete={autoComplete}
-        placeholder={placeholder}
-        aria-required={required}
-        aria-invalid={Boolean(error)}
+        onBlur={() =>
+          onBlur(name)
+        }
+        autoComplete={
+          autoComplete
+        }
+        placeholder={
+          placeholder
+        }
+        aria-required={
+          required
+        }
+        aria-invalid={
+          Boolean(error)
+        }
         aria-describedby={
-          error ? errorId : undefined
-        }
-        className={`w-full rounded-xl border bg-[#080D17] px-4 py-3 text-sm text-white outline-none transition-all duration-200 placeholder:text-slate-700 ${
           error
-            ? "border-red-400/50 bg-red-500/[0.035] focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+            ? errorId
+            : undefined
+        }
+        className={`w-full rounded-xl border bg-[#080D17] px-4 py-3 text-sm text-white outline-none transition-all duration-200 placeholder:text-white/25 ${
+          error
+            ? "border-red-400/70 bg-red-500/[0.04] focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
             : "border-white/[0.09] hover:border-white/[0.15] focus:border-indigo-400/60 focus:ring-4 focus:ring-indigo-500/10"
         }`}
       />
@@ -684,9 +955,9 @@ function Field({
         <p
           id={errorId}
           role="alert"
-          className="mt-2 flex items-center gap-1.5 text-xs text-red-400"
+          className="mt-2 flex items-start gap-1.5 text-xs font-medium leading-5 text-red-400"
         >
-          <AlertCircle className="h-3 w-3 shrink-0" />
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
 
           {error}
         </p>
@@ -704,13 +975,16 @@ interface TextAreaFieldProps {
   name: keyof LeadFormValues;
   value: string;
   error?: string;
+
   onChange: (
     name: keyof LeadFormValues,
     value: string
   ) => void;
+
   onBlur: (
     name: keyof LeadFormValues
   ) => void;
+
   placeholder?: string;
   optional?: boolean;
 }
@@ -725,18 +999,19 @@ function TextAreaField({
   placeholder,
   optional,
 }: TextAreaFieldProps) {
-  const errorId = `${name}-error`;
+  const errorId =
+    `${name}-error`;
 
   return (
     <div>
       <label
         htmlFor={name}
-        className="mb-2 flex items-center gap-1 text-xs font-medium text-slate-300"
+        className="mb-2 flex items-center gap-1 text-xs font-medium text-white/80"
       >
         {label}
 
         {optional && (
-          <span className="font-normal text-slate-600">
+          <span className="font-normal text-white/40">
             (optional)
           </span>
         )}
@@ -747,18 +1022,31 @@ function TextAreaField({
         name={name}
         value={value}
         rows={5}
-        onChange={(event) =>
-          onChange(name, event.target.value)
+        onChange={(
+          event
+        ) =>
+          onChange(
+            name,
+            event.target.value
+          )
         }
-        onBlur={() => onBlur(name)}
-        placeholder={placeholder}
-        aria-invalid={Boolean(error)}
+        onBlur={() =>
+          onBlur(name)
+        }
+        placeholder={
+          placeholder
+        }
+        aria-invalid={
+          Boolean(error)
+        }
         aria-describedby={
-          error ? errorId : undefined
-        }
-        className={`w-full resize-none rounded-xl border bg-[#080D17] px-4 py-3 text-sm leading-6 text-white outline-none transition-all duration-200 placeholder:text-slate-700 ${
           error
-            ? "border-red-400/50 focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
+            ? errorId
+            : undefined
+        }
+        className={`w-full resize-none rounded-xl border bg-[#080D17] px-4 py-3 text-sm leading-6 text-white outline-none transition-all duration-200 placeholder:text-white/25 ${
+          error
+            ? "border-red-400/70 focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
             : "border-white/[0.09] hover:border-white/[0.15] focus:border-indigo-400/60 focus:ring-4 focus:ring-indigo-500/10"
         }`}
       />
@@ -767,9 +1055,9 @@ function TextAreaField({
         <p
           id={errorId}
           role="alert"
-          className="mt-2 flex items-center gap-1.5 text-xs text-red-400"
+          className="mt-2 flex items-start gap-1.5 text-xs font-medium text-red-400"
         >
-          <AlertCircle className="h-3 w-3 shrink-0" />
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
 
           {error}
         </p>
