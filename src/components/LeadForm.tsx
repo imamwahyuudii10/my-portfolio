@@ -665,28 +665,7 @@ export default function LeadForm() {
             />
           </div>
 
-          <Field
-            label="Phone number"
-            name="phone"
-            type="tel"
-            value={
-              values.phone
-            }
-            error={
-              touched.phone
-                ? errors.phone
-                : undefined
-            }
-            onChange={
-              handleChange
-            }
-            onBlur={
-              handleBlur
-            }
-            autoComplete="tel"
-            placeholder="+1 234 567 890"
-            optional
-          />
+         
         </FormGroup>
 
         {/* MESSAGE */}
