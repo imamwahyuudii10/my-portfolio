@@ -151,8 +151,7 @@ export default function LeadForm() {
     setValues(nextValues);
 
     /*
-     * Kalau sebelumnya form gagal submit,
-     * hilangkan global error saat user mulai memperbaiki data.
+     * Hilangkan global error saat user mulai mengubah data.
      */
     if (status === "error") {
       setStatus("idle");
@@ -194,10 +193,6 @@ export default function LeadForm() {
   ) {
     event.preventDefault();
 
-    /*
-     * Guard tambahan supaya user tidak melakukan
-     * double submit.
-     */
     if (isSubmitting) {
       return;
     }
@@ -223,27 +218,6 @@ export default function LeadForm() {
     setStatus("submitting");
     setSubmitError(null);
 
-    /*
-     * IMPORTANT:
-     *
-     * Frontend TIDAK melakukan duplicate checking
-     * langsung ke Supabase.
-     *
-     * Semua business logic tetap berada di n8n:
-     *
-     * Frontend
-     *    ↓
-     * n8n Webhook
-     *    ↓
-     * Duplicate Check
-     *    ↓
-     * INSERT / UPDATE
-     *    ↓
-     * AI
-     *    ↓
-     * Supabase
-     */
-
     try {
       const result = await submitLead(values);
 
@@ -252,25 +226,49 @@ export default function LeadForm() {
         return;
       }
 
+      // Menangani error balasan dari backend/n8n (termasuk email duplikat)
+      setStatus("error");
+      
+      const errorMessage = result.errorMessage || "";
+      
+      // Deteksi jika pesan mengandung kata 'duplicate' atau 'already exists'
+      if (
+        errorMessage.toLowerCase().includes("duplicate") ||
+        errorMessage.toLowerCase().includes("already registered") ||
+        errorMessage.toLowerCase().includes("already exists")
+      ) {
+        setErrors((prev) => ({
+          ...prev,
+          email: "This email is already registered in our system.",
+        }));
+        setSubmitError("This email has already been submitted. Please use a different work email.");
+      } else {
+        setSubmitError(
+          errorMessage || "We couldn't process your request. Please try again."
+        );
+      }
+    } catch (err: unknown) {
       setStatus("error");
 
-      setSubmitError(
-        result.errorMessage ??
-          "We couldn't process your request. Please try again."
-      );
-    } catch {
-      setStatus("error");
+      const errMessage = err instanceof Error ? err.message : "";
 
-      setSubmitError(
-        "We couldn't connect to the service. Please try again in a moment."
-      );
+      if (
+        errMessage.toLowerCase().includes("duplicate") ||
+        errMessage.toLowerCase().includes("already registered")
+      ) {
+        setErrors((prev) => ({
+          ...prev,
+          email: "This email is already registered in our system.",
+        }));
+        setSubmitError("This email has already been submitted. Please use a different work email.");
+      } else {
+        setSubmitError(
+          "We couldn't connect to the service. Please check your connection and try again."
+        );
+      }
     }
   }
 
-  /*
-   * Success screen hanya muncul setelah
-   * n8n benar-benar mengembalikan success.
-   */
   if (status === "success") {
     return (
       <div className="mx-auto max-w-2xl">
