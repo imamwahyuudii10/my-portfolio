@@ -1,9 +1,9 @@
 import {
-  FileInput,
+  UserPlus,
   Cog,
   BrainCircuit,
   UserCheck,
-  MailCheck,
+  Send,
   CheckCircle2,
   ArrowRight,
   type LucideIcon,
@@ -24,8 +24,8 @@ const STEPS: Step[] = [
     title: "Capture",
     description:
       "Every new lead enters through your website and is validated instantly.",
-    detail: "Clean data enters the pipeline",
-    icon: FileInput,
+    detail: "New potential customer captured",
+    icon: UserPlus,
   },
   {
     number: "02",
@@ -57,8 +57,8 @@ const STEPS: Step[] = [
     title: "Engage",
     description:
       "Approved outreach is delivered automatically and the lead status is updated.",
-    detail: "Consistent follow-up, automatically",
-    icon: MailCheck,
+    detail: "Personalized follow-up delivered",
+    icon: Send,
   },
 ];
 
@@ -138,7 +138,9 @@ export default function HowItWorks() {
 
                       <span
                         className={`text-xs font-bold tracking-[0.15em] ${
-                          step.highlight ? "text-indigo-400" : "text-slate-300"
+                          step.highlight
+                            ? "text-indigo-400"
+                            : "text-slate-300"
                         }`}
                       >
                         {step.number}
@@ -243,6 +245,7 @@ export default function HowItWorks() {
 
                   <div className="mt-4 flex items-start gap-2 border-t border-slate-100 pt-4">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+
                     <span className="text-xs font-medium leading-5 text-slate-500">
                       {step.detail}
                     </span>
