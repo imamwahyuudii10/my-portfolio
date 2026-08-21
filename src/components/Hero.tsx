@@ -1,7 +1,7 @@
 import {
   ArrowRight,
   PlayCircle,
-  FileInput,
+  UserPlus,
   Sparkles,
   Database,
   UserCheck,
@@ -14,9 +14,9 @@ import {
 
 const PIPELINE_STEPS = [
   {
-    icon: FileInput,
+    icon: UserPlus,
     label: "Lead Capture",
-    description: "New lead received",
+    description: "New lead submitted",
   },
   {
     icon: Sparkles,
